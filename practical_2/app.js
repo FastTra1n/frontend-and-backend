@@ -17,13 +17,13 @@ let products = [
 
 app.get("/products", (req, res) => {
   // GET-запрос на получение списка всех товаров.
-  res.send(JSON.stringify(products));
+  res.json(products);
 });
 
 app.get("/products/:id", (req, res) => {
   // GET-запрос на получение конкретного товара по id.
   const product = products.find(p => p.id == req.params.id);
-  res.send(JSON.stringify(product));
+  res.json(product);
 });
 
 app.post("/products", (req, res) => {
