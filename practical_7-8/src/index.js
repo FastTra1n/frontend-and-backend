@@ -1,6 +1,7 @@
 import express from "express";
 import { nanoid } from "nanoid";
 import cors from "cors";
+import bcrypt from "bcrypt";
 
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
@@ -117,6 +118,8 @@ let products = [
   },
 ];
 
+let users = [];
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -147,25 +150,26 @@ app.use((req, res, next) => {
 
 const swaggerOptions = {
   definition: {
-    openapi: '3.0.0',
+    openapi: "3.0.0",
     info: {
-      title: 'API управления товарами',
-      version: '1.0.0',
-      description: 'API для управления ассортиментом товаров и выполнения над ними CRUD операций.',
+      title: "API управления товарами",
+      version: "1.0.0",
+      description:
+        "API для управления ассортиментом товаров и выполнения над ними CRUD операций.",
     },
     servers: [
       {
         url: `http://localhost:${port}`,
-        description: 'Локальный сервер',
+        description: "Локальный сервер",
       },
     ],
   },
-  apis: ['./index.js'],
+  apis: ["./index.js"],
 };
 
 const swaggerSpec = swaggerJSDoc(swaggerOptions);
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 /**
  * @swagger
@@ -221,6 +225,166 @@ function findProductOr404(id, res) {
   }
   return product;
 }
+
+function findUserOr404(email, res) {
+  const user = users.find((u) => u.email == email);
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return null;
+  }
+  return user;
+}
+
+async function hashPassword(password) {
+  const rounds = 10;
+  return bcrypt.hash(password, rounds);
+}
+
+async function verifyPassword(password, passwordHash) {
+  return bcrypt.compare(password, passwordHash);
+}
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Регистрация нового пользователя
+ *     description: Создаёт нового пользователя с хешированным паролем
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - firstName
+ *               - lastName
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: example@domen.com
+ *               firstName:
+ *                 type: string
+ *                 example: Ivan
+ *               lastName:
+ *                 type: string
+ *                 example: Ivanov
+ *               password:
+ *                 type: string
+ *                 example: qwerty12345
+ *     responses:
+ *       201:
+ *         description: Пользователь успешно создан
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   example: fhzcYH
+ *                 email:
+ *                   type: string
+ *                   example: example@domen.com
+ *                 firstName:
+ *                   type: string
+ *                   example: Ivan
+ *                 lastName:
+ *                   type: string
+ *                   example: Ivanov
+ *                 password:
+ *                   type: string
+ *                   example: $2a$10$RYhnJE8fQB3Uv7q3V4F.iO3/f7bigK7zeAnLHmvpzgRoo9wpky9Qa
+ *       400:
+ *         description: Некорректные данные
+ */
+app.post("/api/auth/register", async (req, res) => {
+  const { email, firstName, lastName, password } = req.body;
+
+  if (
+    email === undefined ||
+    firstName === undefined ||
+    lastName === undefined ||
+    password === undefined
+  ) {
+    return res.status(400).json({ error: "user information are required" });
+  }
+  const newUser = {
+    id: nanoid(6),
+    email: email.trim(),
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
+    hashedPassword: await hashPassword(password),
+  };
+
+  users.push(newUser);
+  res.status(201).json(newUser);
+});
+
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Авторизация пользователя в систему
+ *     description: Проверяет логин и пароль пользователя
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: example@domen.com
+ *               password:
+ *                 type: string
+ *                 example: qwerty12345
+ *     responses:
+ *       200:
+ *         description: Успешная авторизация
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 login:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: Отсутствуют обязательные поля
+ *       401:
+ *         description: Неверные учётные данные
+ *       404:
+ *         description: Пользователь не найден
+ */
+app.post("/api/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (email === undefined || password === undefined) {
+    return res.status(400).json({ error: "email and password are required" });
+  }
+
+  const user = findUserOr404(email, res);
+  if (!user) return;
+
+  const isAuthentethicated = await verifyPassword(
+    password,
+    user.hashedPassword,
+  );
+  if (isAuthentethicated) {
+    res.status(200).json({ login: true });
+  } else {
+    res.status(401).json({ error: "not authentethicated" });
+  }
+});
 
 /**
  * @swagger
@@ -453,4 +617,7 @@ app.use((err, req, res, next) => {
 // Запуск сервера
 app.listen(port, () => {
   console.log(`Сервер запущен на http://localhost:${port}`);
+  console.log(
+    `Swagger UI доступен по адресу http://localhost:${port}/api-docs`,
+  );
 });
