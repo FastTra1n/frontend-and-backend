@@ -80,12 +80,15 @@ function ProductsPage() {
       <header className="header">
         <div className="header__container">
           <h1 className="header__logo">Online store</h1>
-          <button
-            className="header__add-product"
-            onClick={() => openCreateModal()}
-          >
-            Добавить товар
-          </button>
+          <div className="header__button-wrapper">
+            <button
+              className="header__add-product"
+              onClick={() => openCreateModal()}
+            >
+              Добавить товар
+            </button>
+            <button className="header__auth">Авторизоваться</button>
+          </div>
         </div>
       </header>
 
