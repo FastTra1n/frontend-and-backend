@@ -50,7 +50,6 @@ body {
 .header__button-wrapper {
     display: flex;
     column-gap: 10px;
-    width: 350px;
 }
 
 .header__add-product {
@@ -73,7 +72,7 @@ body {
 }
 
 .header__auth {
-    background-color: #138708;
+    background-color: #4f4f4f;
     color: white;
     border: none;
     border-radius: 40px;
@@ -102,7 +101,7 @@ body {
 }
 
 .header__auth:hover {
-    background-color: #0c5705;
+    background-color: #404040;
     box-shadow: 0 6px 12px rgba(46, 74, 122, 0.25);
 }
 

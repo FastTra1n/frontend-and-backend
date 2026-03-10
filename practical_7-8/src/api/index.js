@@ -8,6 +8,17 @@ const apiClient = axios.create({
   },
 });
 
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
 export const api = {
   createProduct: async (product) => {
     let response = await apiClient.post("/products", product);
@@ -27,6 +38,20 @@ export const api = {
   },
   deleteProduct: async (id) => {
     let response = await apiClient.delete(`/products/${id}`);
+    return response.data;
+  },
+
+  authUser: async (credentials) => {
+    let response = await apiClient.post("/auth/login", credentials);
+
+    const { accessToken } = response.data;
+    if (accessToken) {
+      localStorage.setItem("token", accessToken);
+    }
+    return response.data;
+  },
+  registerUser: async (credentials) => {
+    let response = await apiClient.post("/auth/register", credentials);
     return response.data;
   },
 };

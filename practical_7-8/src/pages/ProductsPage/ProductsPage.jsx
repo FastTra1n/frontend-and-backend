@@ -3,17 +3,23 @@ import { nanoid } from "nanoid";
 
 import ProductsList from "../../components/ProductsList.jsx";
 import ProductModal from "../../components/ProductModal.jsx";
+import AuthModal from "../../components/AuthModal.jsx";
 
 import "./ProductsPage.css";
 
 import { api } from "../../api";
 
 function ProductsPage() {
+  const isLoggedIn = localStorage.getItem("token");
+
   const [products, setProducts] = useState([]);
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("create");
+  const [productModalOpen, setProductModalOpen] = useState(false);
+  const [productModalMode, setProductModalMode] = useState("create");
   const [editingProduct, setEditingProduct] = useState(null);
+
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState("authorization");
 
   useEffect(() => {
     loadProducts();
@@ -29,25 +35,25 @@ function ProductsPage() {
   };
 
   const openCreateModal = () => {
-    setModalMode("create");
+    setProductModalMode("create");
     setEditingProduct(null);
-    setModalOpen(true);
+    setProductModalOpen(true);
   };
 
   const openEditModal = (product) => {
-    setModalMode("edit");
+    setProductModalMode("edit");
     setEditingProduct(product);
-    setModalOpen(true);
+    setProductModalOpen(true);
   };
 
   const closeModal = () => {
-    setModalOpen(false);
+    setProductModalOpen(false);
     setEditingProduct(null);
   };
 
   const handleSubmitModal = async (payload) => {
     try {
-      if (modalMode === "create") {
+      if (productModalMode === "create") {
         const newProduct = await api.createProduct(payload);
         setProducts((prev) => [...prev, newProduct]);
       } else {
@@ -57,6 +63,21 @@ function ProductsPage() {
         );
       }
       closeModal();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleAuthModal = async (payload) => {
+    try {
+      if (authModalMode === "authorization") {
+        await api.authUser(payload);
+      } else {
+        await api.registerUser(payload);
+        alert("Аккаунт успешно создан!");
+      }
+      setAuthModalOpen(false);
+      setAuthModalMode("authorization");
     } catch (err) {
       console.error(err);
     }
@@ -81,13 +102,20 @@ function ProductsPage() {
         <div className="header__container">
           <h1 className="header__logo">Online store</h1>
           <div className="header__button-wrapper">
+            {isLoggedIn && (
+              <button
+                className="header__add-product"
+                onClick={() => openCreateModal()}
+              >
+                Добавить товар
+              </button>
+            )}
             <button
-              className="header__add-product"
-              onClick={() => openCreateModal()}
+              className="header__auth"
+              onClick={() => setAuthModalOpen(true)}
             >
-              Добавить товар
+              Авторизоваться
             </button>
-            <button className="header__auth">Авторизоваться</button>
           </div>
         </div>
       </header>
@@ -99,12 +127,20 @@ function ProductsPage() {
       </main>
 
       <ProductModal
-        mode={modalMode}
+        mode={productModalMode}
         initialProduct={editingProduct}
-        isOpen={modalOpen}
+        isOpen={productModalOpen}
         onClose={closeModal}
         onSubmit={handleSubmitModal}
         onDelete={handleDelete}
+      />
+
+      <AuthModal
+        mode={authModalMode}
+        setMode={setAuthModalMode}
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSubmit={handleAuthModal}
       />
     </>
   );

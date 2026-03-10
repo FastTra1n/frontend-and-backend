@@ -418,7 +418,7 @@ app.post("/api/auth/login", async (req, res) => {
         expiresIn: ACCESS_EXPIRES_IN,
       },
     );
-    res.status(200).json({ accessToken });
+    res.json({ accessToken });
   } else {
     res.status(401).json({ error: "not authentethicated" });
   }
@@ -468,7 +468,7 @@ app.get("/api/products", (req, res) => {
  *       404:
  *         description: Товар не найден
  */
-app.get("/api/products/:id", (req, res) => {
+app.get("/api/products/:id", authMiddleware, (req, res) => {
   // GET-запрос на получение конкретного товара по id.
   const id = req.params.id;
 
@@ -520,7 +520,7 @@ app.get("/api/products/:id", (req, res) => {
  *       400:
  *         description: Ошибка в теле запроса на добавление товара
  */
-app.post("/api/products", (req, res) => {
+app.post("/api/products", authMiddleware, (req, res) => {
   // POST-запрос на добавление нового товара.
   const { name, price, description, category, quanity, image } = req.body;
   const newProduct = {
@@ -580,7 +580,7 @@ app.post("/api/products", (req, res) => {
  *       404:
  *         description: Товар не найден
  */
-app.patch("/api/products/:id", (req, res) => {
+app.patch("/api/products/:id", authMiddleware, (req, res) => {
   // PATCH-запрос на модифицирование конкретного товара по id.
   const id = req.params.id;
 
@@ -631,7 +631,7 @@ app.patch("/api/products/:id", (req, res) => {
  *       404:
  *         description: Товар не найден
  */
-app.delete("/api/products/:id", (req, res) => {
+app.delete("/api/products/:id", authMiddleware, (req, res) => {
   // DELETE-запрос на удаление товара по id.
   const id = req.params.id;
 
