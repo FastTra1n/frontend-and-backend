@@ -10,7 +10,7 @@ import "./ProductsPage.css";
 import { api } from "../../api";
 
 function ProductsPage() {
-  const isLoggedIn = localStorage.getItem("token");
+  const [isUserLogged, setIsUserLogged] = useState(false);
 
   const [products, setProducts] = useState([]);
 
@@ -22,8 +22,28 @@ function ProductsPage() {
   const [authModalMode, setAuthModalMode] = useState("authorization");
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setIsUserLogged(false);
+      return;
+    }
+
+    checkTokenValidity();
+  })
+
+  useEffect(() => {
     loadProducts();
   }, []);
+
+  const checkTokenValidity = async () => {
+    try {
+      await api.checkUser();
+      setIsUserLogged(true);
+    } catch (e) {
+      setIsUserLogged(false);
+      console.error(e);
+    }
+  };
 
   const loadProducts = async () => {
     try {
@@ -102,27 +122,28 @@ function ProductsPage() {
         <div className="header__container">
           <h1 className="header__logo">Online store</h1>
           <div className="header__button-wrapper">
-            {isLoggedIn && (
+            {isUserLogged ? (
               <button
                 className="header__add-product"
                 onClick={() => openCreateModal()}
               >
                 Добавить товар
               </button>
-            )}
-            <button
+            ) : (
+              <button
               className="header__auth"
               onClick={() => setAuthModalOpen(true)}
             >
               Авторизоваться
             </button>
+            )}
           </div>
         </div>
       </header>
 
       <main className="main">
         <div className="container">
-          <ProductsList products={products} onEdit={openEditModal} />
+          <ProductsList products={products} onEdit={isUserLogged ? openEditModal : setAuthModalOpen} />
         </div>
       </main>
 

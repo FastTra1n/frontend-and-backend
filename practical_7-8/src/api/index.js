@@ -19,6 +19,16 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+apiClient.interceptors.request.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+    }
+    return Promise.reject(error);
+  },
+);
+
 export const api = {
   createProduct: async (product) => {
     let response = await apiClient.post("/products", product);
@@ -54,4 +64,8 @@ export const api = {
     let response = await apiClient.post("/auth/register", credentials);
     return response.data;
   },
+  checkUser: async () => {
+    let response = await apiClient.get("/auth/me");
+    return response.data;
+  }
 };

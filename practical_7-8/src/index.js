@@ -272,6 +272,22 @@ async function verifyPassword(password, passwordHash) {
   return bcrypt.compare(password, passwordHash);
 }
 
+app.get("/api/auth/me", authMiddleware, (req, res) => {
+  const userId = req.user.sub;
+
+  const user = users.find((u) => u.id === userId);
+  if (!user) {
+    return res.status(404).json({
+      error: "User not found",
+    });
+  }
+
+  res.json({
+    id: user.id,
+    username: user.username,
+  });
+});
+
 /**
  * @swagger
  * /api/auth/register:
