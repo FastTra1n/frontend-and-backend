@@ -128,7 +128,16 @@ let products = [
   },
 ];
 
-let users = [];
+let users = [
+  {
+    id: nanoid(6),
+    email: "admin@domen.com",
+    firstName: "Admin",
+    lastName: "Adminovich",
+    hashedPassword: await hashPassword("admin"),
+    role: "admin",
+  },
+];
 
 const refreshTokens = new Set();
 
@@ -303,7 +312,8 @@ app.get("/api/auth/me", authMiddleware, (req, res) => {
 
   res.json({
     id: user.id,
-    username: user.username,
+    email: user.email,
+    role: user.role,
   });
 });
 
@@ -746,6 +756,10 @@ app.delete("/api/products/:id", authMiddleware, (req, res) => {
 
   products = products.filter((u) => u.id !== id);
   res.status(204).send();
+});
+
+app.get("/api/users", authMiddleware, roleMiddleware(["admin"]), (req, res) => {
+  res.json(users);
 });
 
 app.get(

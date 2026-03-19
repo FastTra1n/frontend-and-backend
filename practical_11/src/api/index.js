@@ -130,4 +130,8 @@ export const api = {
     );
     return response.data;
   },
+  getAllUsers: async () => {
+    let response = await apiClient.get("/users");
+    return response.data;
+  },
 };
