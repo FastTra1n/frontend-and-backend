@@ -10,6 +10,40 @@ function AdminPanel() {
   const [selectedRole, setSelectedRole] = useState("");
   const [loading, setLoading] = useState(true);
 
+  const handleRoleChange = (userId, currentRole) => {
+    setEditingId(userId);
+    setSelectedRole(currentRole);
+  };
+
+  const saveRole = async (userId) => {
+    try {
+      await api.updateUser(userId, { role: selectedRole });
+      setUsers(
+        users.map((u) => (u.id === userId ? { ...u, role: selectedRole } : u)),
+      );
+      setEditingId(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    const deleteConfirm = window.confirm(
+      "Вы уверены, что хотите удалить пользователя?",
+    );
+    if (!deleteConfirm) return;
+
+    try {
+      await api.deleteUser(userId);
+      setUsers(users.filter((u) => u.id !== userId));
+      setEditingId(null);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -50,7 +84,6 @@ function AdminPanel() {
               <tr key={u.id}>
                 <td>{u.id}</td>
                 <td>{u.email}</td>
-                <td>{u.role}</td>
                 <td>
                   {editingId === u.id ? (
                     <select
@@ -67,6 +100,36 @@ function AdminPanel() {
                     "Продавец"
                   ) : (
                     "Админ"
+                  )}
+                </td>
+                <td>
+                  {editingId === u.id ? (
+                    <>
+                      <button
+                        className="btn btn-save"
+                        onClick={() => saveRole(u.id)}
+                      >
+                        Сохранить
+                      </button>
+                      <button className="btn btn-cancel" onClick={cancelEdit}>
+                        Отмена
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className="btn btn-edit"
+                        onClick={() => handleRoleChange(u.id, u.role)}
+                      >
+                        Изменить роль
+                      </button>
+                      <button
+                        className="btn btn-cancel"
+                        onClick={() => deleteUser(u.id)}
+                      >
+                        Удалить
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>

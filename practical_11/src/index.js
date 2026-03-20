@@ -300,22 +300,27 @@ async function verifyPassword(password, passwordHash) {
   return bcrypt.compare(password, passwordHash);
 }
 
-app.get("/api/auth/me", authMiddleware, (req, res) => {
-  const userId = req.user.sub;
+app.get(
+  "/api/auth/me",
+  authMiddleware,
+  roleMiddleware(["user", "seller", "admin"]),
+  (req, res) => {
+    const userId = req.user.sub;
 
-  const user = users.find((u) => u.id === userId);
-  if (!user) {
-    return res.status(404).json({
-      error: "User not found",
+    const user = users.find((u) => u.id === userId);
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found",
+      });
+    }
+
+    res.json({
+      id: user.id,
+      email: user.email,
+      role: user.role,
     });
-  }
-
-  res.json({
-    id: user.id,
-    email: user.email,
-    role: user.role,
-  });
-});
+  },
+);
 
 function generateAccessToken(user) {
   return jwt.sign(
@@ -556,10 +561,15 @@ app.post("/api/auth/refresh", (req, res) => {
  *               items:
  *                 $ref: '#/components/schemas/Product'
  */
-app.get("/api/products", (req, res) => {
-  // GET-запрос на получение списка всех товаров.
-  res.json(products);
-});
+app.get(
+  "/api/products",
+  authMiddleware,
+  roleMiddleware(["user", "seller", "admin"]),
+  (req, res) => {
+    // GET-запрос на получение списка всех товаров.
+    res.json(products);
+  },
+);
 
 /**
  * @swagger
@@ -584,15 +594,20 @@ app.get("/api/products", (req, res) => {
  *       404:
  *         description: Товар не найден
  */
-app.get("/api/products/:id", authMiddleware, (req, res) => {
-  // GET-запрос на получение конкретного товара по id.
-  const id = req.params.id;
+app.get(
+  "/api/products/:id",
+  authMiddleware,
+  roleMiddleware(["user", "seller", "admin"]),
+  (req, res) => {
+    // GET-запрос на получение конкретного товара по id.
+    const id = req.params.id;
 
-  const product = findProductOr404(id, res);
-  if (!product) return;
+    const product = findProductOr404(id, res);
+    if (!product) return;
 
-  res.json(product);
-});
+    res.json(product);
+  },
+);
 
 /**
  * @swagger
@@ -636,21 +651,26 @@ app.get("/api/products/:id", authMiddleware, (req, res) => {
  *       400:
  *         description: Ошибка в теле запроса на добавление товара
  */
-app.post("/api/products", authMiddleware, (req, res) => {
-  // POST-запрос на добавление нового товара.
-  const { name, price, description, category, quanity, image } = req.body;
-  const newProduct = {
-    id: nanoid(6),
-    name: name.trim(),
-    price: Number(price),
-    description: description.trim(),
-    category: category.trim(),
-    quanity: Number(quanity),
-    image: image.trim(),
-  };
-  products.push(newProduct);
-  res.status(201).json(newProduct);
-});
+app.post(
+  "/api/products",
+  authMiddleware,
+  roleMiddleware(["seller", "admin"]),
+  (req, res) => {
+    // POST-запрос на добавление нового товара.
+    const { name, price, description, category, quanity, image } = req.body;
+    const newProduct = {
+      id: nanoid(6),
+      name: name.trim(),
+      price: Number(price),
+      description: description.trim(),
+      category: category.trim(),
+      quanity: Number(quanity),
+      image: image.trim(),
+    };
+    products.push(newProduct);
+    res.status(201).json(newProduct);
+  },
+);
 
 /**
  * @swagger
@@ -696,37 +716,42 @@ app.post("/api/products", authMiddleware, (req, res) => {
  *       404:
  *         description: Товар не найден
  */
-app.patch("/api/products/:id", authMiddleware, (req, res) => {
-  // PATCH-запрос на модифицирование конкретного товара по id.
-  const id = req.params.id;
+app.patch(
+  "/api/products/:id",
+  authMiddleware,
+  roleMiddleware(["seller", "admin"]),
+  (req, res) => {
+    // PATCH-запрос на модифицирование конкретного товара по id.
+    const id = req.params.id;
 
-  const product = findProductOr404(id, res);
-  if (!product) return;
+    const product = findProductOr404(id, res);
+    if (!product) return;
 
-  if (
-    req.body?.name === undefined &&
-    req.body?.price === undefined &&
-    req.body?.description === undefined &&
-    req.body?.category === undefined &&
-    req.body?.quanity === undefined &&
-    req.body?.image === undefined
-  ) {
-    return res.status(400).json({
-      error: "Nothing to update",
-    });
-  }
+    if (
+      req.body?.name === undefined &&
+      req.body?.price === undefined &&
+      req.body?.description === undefined &&
+      req.body?.category === undefined &&
+      req.body?.quanity === undefined &&
+      req.body?.image === undefined
+    ) {
+      return res.status(400).json({
+        error: "Nothing to update",
+      });
+    }
 
-  const { name, price, description, category, quanity, image } = req.body;
+    const { name, price, description, category, quanity, image } = req.body;
 
-  if (name !== undefined) product.name = name.trim();
-  if (price !== undefined) product.price = Number(price);
-  if (description !== undefined) product.description = description.trim();
-  if (category !== undefined) product.category = category.trim();
-  if (quanity !== undefined) product.quanity = Number(quanity);
-  if (image !== undefined) product.image = image.trim();
+    if (name !== undefined) product.name = name.trim();
+    if (price !== undefined) product.price = Number(price);
+    if (description !== undefined) product.description = description.trim();
+    if (category !== undefined) product.category = category.trim();
+    if (quanity !== undefined) product.quanity = Number(quanity);
+    if (image !== undefined) product.image = image.trim();
 
-  res.status(200).json(product);
-});
+    res.status(200).json(product);
+  },
+);
 
 /**
  * @swagger
@@ -747,20 +772,77 @@ app.patch("/api/products/:id", authMiddleware, (req, res) => {
  *       404:
  *         description: Товар не найден
  */
-app.delete("/api/products/:id", authMiddleware, (req, res) => {
-  // DELETE-запрос на удаление товара по id.
-  const id = req.params.id;
+app.delete(
+  "/api/products/:id",
+  authMiddleware,
+  roleMiddleware(["seller", "admin"]),
+  (req, res) => {
+    // DELETE-запрос на удаление товара по id.
+    const id = req.params.id;
 
-  const exists = products.some((p) => p.id === id);
-  if (!exists) return res.status(404).json({ error: "Product not found" });
+    const exists = products.some((p) => p.id === id);
+    if (!exists) return res.status(404).json({ error: "Product not found" });
 
-  products = products.filter((u) => u.id !== id);
-  res.status(204).send();
-});
+    products = products.filter((u) => u.id !== id);
+    res.status(204).send();
+  },
+);
 
 app.get("/api/users", authMiddleware, roleMiddleware(["admin"]), (req, res) => {
   res.json(users);
 });
+
+app.get(
+  "/api/users/:id",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  (req, res) => {
+    const id = req.params.id;
+
+    const user = users.find((u) => u.id === id);
+    if (!user) return;
+
+    res.json(user);
+  },
+);
+
+app.patch(
+  "/api/users/:id",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  (req, res) => {
+    const id = req.params.id;
+
+    const user = users.find((u) => u.id == id);
+    if (!user) return;
+
+    if (req.body?.role === undefined) {
+      return res.status(400).json({
+        error: "Nothing to update",
+      });
+    }
+
+    const { role } = req.body;
+    if (role !== undefined) user.role = role;
+
+    res.status(200).json(user);
+  },
+);
+
+app.delete(
+  "/api/users/:id",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  (req, res) => {
+    const id = req.params.id;
+
+    const user = users.find((u) => u.id === id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    users = users.filter((u) => u.id !== id);
+    res.status(204).send();
+  },
+);
 
 app.get(
   "/api/protected-route",

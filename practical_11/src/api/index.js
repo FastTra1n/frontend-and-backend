@@ -134,4 +134,12 @@ export const api = {
     let response = await apiClient.get("/users");
     return response.data;
   },
+  updateUser: async (id, userData) => {
+    let response = await apiClient.patch(`/users/${id}`, userData);
+    return response.data;
+  },
+  deleteUser: async (id) => {
+    let response = await apiClient.delete(`/users/${id}`);
+    return response.data;
+  },
 };
