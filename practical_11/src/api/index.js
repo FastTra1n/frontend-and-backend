@@ -74,6 +74,8 @@ apiClient.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     return Promise.reject(error);
   },
 );
