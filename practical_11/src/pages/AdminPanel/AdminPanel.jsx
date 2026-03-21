@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 
 import "./AdminPanel.css";
 
 import { api } from "../../api";
 
 function AdminPanel() {
+  const [userRole, setUserRole] = useState('');
   const [users, setUsers] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [selectedRole, setSelectedRole] = useState("");
@@ -55,15 +57,45 @@ function AdminPanel() {
       setLoading(false);
     }
   };
+  
+  const checkRole = async () => {
+    try {
+      const data = await api.checkUser();
+      role = data.role
+      setUserRole(data.role);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
-    fetchUsers();
+    const init = async () => {
+      try {
+        const data = await api.checkUser();
+        const role = data.role;
+        setUserRole(role);
+
+        if (role === 'admin') {
+          await fetchUsers();
+        }
+      } catch (err) {
+        console.error(err);
+        setUserRole('');
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
   }, []);
 
   if (loading) {
     return (
-      <div className="admin-panel__message">Загрузка пользователей...</div>
+      <div className="admin-panel__message">Проверка прав доступа...</div>
     );
+  }
+
+  if (userRole !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return (
